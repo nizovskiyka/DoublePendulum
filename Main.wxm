@@ -1,0 +1,90 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 18.10.1 ] */
+/* [wxMaxima: input   start ] */
+kill(all)$
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: input   start ] */
+ratprint:false$
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: input   start ] */
+piNum: 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647 $
+makeHamiltonian(l,m,g,a):=
+(
+    phi : [phi_1,phi_2] ,
+    W : [dphi_1,dphi_2] ,
+    w : (a/nu)*cos(nu*t) ,
+    r : [[l[1]*sin(phi[1]),l[1]*cos(phi[1])+w],[l[1]*sin(phi[1])+l[2]*sin(phi[2]),l[1]*cos(phi[1])+l[2]*cos(phi[2])]] ,
+    v : diff(r,t) + sum(diff(r,phi[i])*omega[i],i,1,2) ,
+    T : (1/2)*sum(m[i]*(v[i][1]**2+v[i][2]**2),i,1,2) ,
+    V : g*sum(m[i]*r[i][2],i,1,2) ,
+    L : T-V,
+    eqv : [p1=diff(L,omega[1]),p2=diff(L,omega[2])] ,
+    param : linsolve(eqv,[omega[1],omega[2]]),
+    H : trigsimp(psubst(param,p1*omega[1]+p2*omega[2]-L)),
+    T0 : 2*piNum/10,
+    H_mean : (1/T0)*(integrate(H,t,0,T0)),
+    H2: at(H, [phi[1] = phi1, phi[2] = phi2]),
+    H_mean2 : at(H_mean, [phi[1] = phi1, phi[2] = phi2]),
+    dHdp1 : diff(H2,p1)/nu,
+    dHdp2 : diff(H2,p2)/nu,
+    dHdphi1 : -diff(H2,phi1)/nu,
+    dHdphi2 : -diff(H2,phi2)/nu,
+    dH_meandp1 : diff(H_mean2,p1)/nu,
+    dH_meandp2 : diff(H_mean2,p2)/nu,
+    dH_meandphi1 : -diff(H_mean2,phi1)/nu,
+    dH_meandphi2 : -diff(H_mean2,phi2)/nu
+)$
+calcDiffArrays(dstep,T1):=block(
+phi1Arr: [],
+phi2Arr: [],
+p1Arr: [],
+p2Arr: [],
+nuArr: [],
+speedDiff: [],
+for nu : 1 step 100 thru 10000 do
+(
+        dHdphi1Arr: [],
+        dHdphi1Arr_mean: [],
+        sol: rk( [ dHdp1, dHdp2, dHdphi1, dHdphi2 ], [ phi1,phi2,p1,p2 ], [1,1,1,1], [t,0,T1,dstep] ),
+        for j:1 step 1 thru length(sol) do dHdphi1Arr : endcons(at(dHdphi1, [t=sol[j][1],phi1 = sol[j][2],phi2 = sol[j][3], p1 = sol[j][4], p2 = sol[j][5]]), dHdphi1Arr),
+        sol_mean: rk( [ dH_meandp1, dH_meandp2, dH_meandphi1, dH_meandphi2 ], [ phi1,phi2,p1,p2 ], [1,1,1,1], [t,0,T1,dstep] ),
+        for k:1 step 1 thru length(sol_mean) do dHdphi1Arr_mean : endcons(at(dH_meandphi1, [t=sol_mean[k][1],phi1 = sol_mean[k][2],phi2 = sol_mean[k][3], p1 = sol_mean[k][4], p2 = sol_mean[k][5]]),dHdphi1Arr_mean),
+        sol_diff : sol-sol_mean,
+        dHdphi1_diff : dHdphi1Arr - dHdphi1Arr_mean,
+        kphi1 : makelist(p[2],p,sol_diff),
+        kphi2 : makelist(p[3],p,sol_diff),
+        kp1 : makelist(p[4],p,sol_diff),
+        kp2 : makelist(p[5],p,sol_diff),
+        phi1Arr:endcons(lmax(kphi1)*nu,phi1Arr),
+        phi2Arr:endcons(lmax(kphi2)*nu,phi2Arr),
+        p1Arr:endcons(lmax(kp1)*nu,p1Arr),
+        p2Arr:endcons(lmax(kp2)*nu,p2Arr),
+        speedDiff:endcons(lmax(dHdphi1_diff)*nu,speedDiff),
+        nuArr:endcons(nu,nuArr)
+    ),
+return ([nuArr,phi1Arr,phi2Arr,p1Arr,p2Arr,speedArr])
+)$
+makeplots(res):=(
+    plot2d([discrete, res[1], res[2]]),
+    plot2d([discrete, res[1], res[3]]),
+    plot2d([discrete, res[1], res[4]]),
+    plot2d([discrete, res[1], res[5]]),
+    plot2d([discrete, res[1], res[6]])
+)$
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: input   start ] */
+makeHamiltonian([1/2,1/2] ,[1/2,1/2] ,981/100,5/1000)$
+result:calcDiffArrays(1/100,1/10)$
+makeplots(result);
+/* [wxMaxima: input   end   ] */
+
+
+
+/* Old versions of Maxima abort on loading files that end in a comment. */
+"Created with wxMaxima 18.10.1"$
